@@ -2,13 +2,19 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Gemini API Extension</title>
-    <link rel="stylesheet" type="text/css" href="style.css" />
+    <title>Gemini API</title>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <h2>Gemini API 질문</h2>
-    <input type="text" id="userInput" placeholder="질문을 입력하세요" />
-    <button id="submitBtn">전송</button>
+    <div id="apiKeyInputContainer">
+      <input type="password" id="apiKey" placeholder="API 키를 입력하세요" />
+      <button id="saveApiKeyBtn">API 키 저장</button>
+    </div>
+    <div id="questionContainer" style="display: none">
+      <input type="text" id="userInput" placeholder="질문을 입력하세요" />
+      <button id="submitBtn">전송</button>
+    </div>
     <div id="response" class="response"></div>
     <script src="popup.js"></script>
   </body>
