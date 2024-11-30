@@ -1,0 +1,43 @@
+/* style.css */
+
+body {
+  font-family: Arial, sans-serif;
+  width: 300px;
+  padding: 15px;
+}
+
+h2 {
+  text-align: center;
+  color: #333;
+}
+
+input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background-color: #4caf50;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+.response {
+  margin-top: 15px;
+  background-color: #f9f9f9;
+  padding: 10px;
+  border-radius: 5px;
+  min-height: 50px;
+  border: 1px solid #ddd;
+  white-space: pre-wrap;
+}
