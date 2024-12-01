@@ -1,17 +1,31 @@
 //AIzaSyCjHNvWNz9T4aNtV7pQah_zIrzWCv6abJs
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
   const apiKeyInput = document.getElementById("apiKey");
   const saveApiKeyBtn = document.getElementById("saveApiKeyBtn");
   const apiKeyInputContainer = document.getElementById("apiKeyInputContainer");
-  const questionContainer = document.getElementById("questionContainer");
+
+  const birthYearInput = document.getElementById("birthYear");
+  const birthMonthInput = document.getElementById("birthMonth");
+  const birthDayInput = document.getElementById("birthDay");
+  const saveBirthdayBtn = document.getElementById("saveBirthdayBtn");
+  const birthdayContainer = document.getElementById("birthdayContainer");
+
+  const userInput = document.getElementById("userInput");
   const submitBtn = document.getElementById("submitBtn");
+  const questionContainer = document.getElementById("questionContainer");
+
   const responseDiv = document.getElementById("response");
 
-  // Check if API key is stored
-  chrome.storage.sync.get("apiKey", (data) => {
-    if (data.apiKey) {
-      // If API key exists, hide API key input and show question input
-      apiKeyInputContainer.style.display = "none";
+  // Check if API key and birthday are stored
+  chrome.storage.sync.get(["apiKey", "birthday"], (data) => {
+    if (!data.apiKey) {
+      // Show API key input if not saved
+      apiKeyInputContainer.style.display = "block";
+    } else if (!data.birthday) {
+      // Show birthday input if not saved
+      birthdayContainer.style.display = "block";
+    } else {
+      // Show question container if all data is saved
       questionContainer.style.display = "block";
     }
   });
@@ -26,23 +40,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     chrome.storage.sync.set({ apiKey }, () => {
       alert("API 키가 저장되었습니다!");
       apiKeyInputContainer.style.display = "none";
+      birthdayContainer.style.display = "block";
+    });
+  });
+
+  // Save Birthday
+  saveBirthdayBtn.addEventListener("click", () => {
+    const birthYear = birthYearInput.value.trim();
+    const birthMonth = birthMonthInput.value.trim();
+    const birthDay = birthDayInput.value.trim();
+
+    if (!birthYear || !birthMonth || !birthDay) {
+      alert("출생 연도, 월, 일을 모두 입력해주세요.");
+      return;
+    }
+
+    const birthday = { year: birthYear, month: birthMonth, day: birthDay };
+    chrome.storage.sync.set({ birthday }, () => {
+      alert("생일이 저장되었습니다!");
+      birthdayContainer.style.display = "none";
       questionContainer.style.display = "block";
     });
   });
 
   // Submit Question
   submitBtn.addEventListener("click", async () => {
-    const userInput = document.getElementById("userInput").value.trim();
-    if (!userInput) {
+    const question = userInput.value.trim();
+    if (!question) {
       alert("질문을 입력해주세요.");
       return;
     }
 
-    // Retrieve API key from storage
-    chrome.storage.sync.get("apiKey", async (data) => {
+    // Retrieve API key and birthday from storage
+    chrome.storage.sync.get(["apiKey", "birthday"], async (data) => {
       const apiKey = data.apiKey;
-      if (!apiKey) {
-        alert("API 키가 설정되지 않았습니다.");
+      const birthday = data.birthday;
+
+      if (!apiKey || !birthday) {
+        alert("API 키와 생일 정보가 모두 설정되어야 합니다.");
         return;
       }
 
@@ -60,7 +95,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               role: "user",
               parts: [
                 {
-                  text: userInput,
+                  text: `사용자의 생일은 ${birthday.year}년 ${birthday.month}월 ${birthday.day}일입니다. 질문: ${question}`,
                 },
               ],
             },
