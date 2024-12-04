@@ -6,7 +6,8 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "storage"
+    "storage",
+    "geolocation"
   ],
   "host_permissions": [
     "https://api.openweathermap.org/*"

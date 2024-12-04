@@ -1,4 +1,3 @@
-//
 document.addEventListener("DOMContentLoaded", () => {
   const apiKeyInput = document.getElementById("apiKey");
   const saveApiKeyBtn = document.getElementById("saveApiKeyBtn");
@@ -15,24 +14,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const weatherElement = document.getElementById("weather");
   const quoteElement = document.getElementById("quote");
 
-  const API_KEY = 'a8103c3ccfec81daceab535bd4b3c839'; // OpenWeatherMap API Key
-// 위치 정보 가져오기 실패 처리
-function showError(error) {
-  switch (error.code) {
+  const API_KEY = "a8103c3ccfec81daceab535bd4b3c839"; // OpenWeatherMap API Key\
+  const GEMINI_KEY = "";
+
+  
+  // Display Error for Location
+  function showError(error) {
+    switch (error.code) {
       case error.PERMISSION_DENIED:
-          document.getElementById("weather").innerHTML = "User denied the request for Geolocation.";
-          break;
+        weatherElement.innerHTML = "User denied the request for Geolocation.";
+        break;
       case error.POSITION_UNAVAILABLE:
-          document.getElementById("weather").innerHTML = "Location information is unavailable.";
-          break;
+        weatherElement.innerHTML = "Location information is unavailable.";
+        break;
       case error.TIMEOUT:
-          document.getElementById("weather").innerHTML = "The request to get user location timed out.";
-          break;
-      case error.UNKNOWN_ERROR:
-          document.getElementById("weather").innerHTML = "An unknown error occurred.";
-          break;
+        weatherElement.innerHTML = "The request to get user location timed out.";
+        break;
+      default:
+        weatherElement.innerHTML = "An unknown error occurred.";
+    }
   }
-}
 
   // Zodiac Sign Calculation
   function getZodiacSign(month, day) {
@@ -63,14 +64,60 @@ function showError(error) {
     return null;
   }
 
-  // Check if API key and birthday are stored
+  // Fetch Results
+  async function fetchResults(apiKey, zodiacSign) {
+    if (!zodiacSign) {
+      alert("유효하지 않은 생일입니다.");
+      return;
+    }
+
+    resultContainer.style.display = "block";
+    horoscopeElement.textContent = "운세를 가져오는 중...";
+    weatherElement.textContent = "날씨를 가져오는 중...";
+    quoteElement.textContent = "명언을 가져오는 중...";
+    try {
+      // Fetch Horoscope
+      const horoscopeResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: {
+              role: "user",
+              parts: [
+                {
+                  text: `오늘의 ${zodiacSign} 운세를 알려주세요.`,
+                },
+              ],
+            },
+            generationConfig: {
+              maxOutputTokens: 100,
+            },
+          }),
+        }
+      );
+      const horoscopeData = await horoscopeResponse.json();
+      horoscopeElement.textContent =
+        horoscopeData.candidates?.[0]?.content.parts[0]?.text ||
+        "운세를 가져올 수 없습니다.";
+
+      // Fetch Weather
+      getLocation();
+    } catch (error) {
+      console.error("Error fetching results:", error);
+    }
+  }
+
+  // Check Stored Data
   chrome.storage.sync.get(["apiKey", "birthday"], (data) => {
     if (!data.apiKey) {
       apiKeyInputContainer.style.display = "block";
     } else if (!data.birthday) {
       birthdayContainer.style.display = "block";
     } else {
-      // Fetch today's horoscope, weather, and quote
       const birthday = data.birthday;
       const zodiacSign = getZodiacSign(birthday.month, birthday.day);
       fetchResults(data.apiKey, zodiacSign);
@@ -115,55 +162,7 @@ function showError(error) {
       });
     });
   });
-
-  // Fetch today's results
-  async function fetchResults(apiKey, zodiacSign) {
-    if (!zodiacSign) {
-      alert("유효하지 않은 생일입니다.");
-      return;
-    }
-
-    resultContainer.style.display = "block";
-    horoscopeElement.textContent = "운세를 가져오는 중...";
-    weatherElement.textContent = "날씨를 가져오는 중...";
-    quoteElement.textContent = "명언을 가져오는 중...";
-    try {
-      // Fetch Horoscope
-      const horoscopeResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: {
-              role: "user",
-              parts: [
-                {
-                  text: `당신은 훌륭한 점성술사입니다. 당신은 모든 점성술에 능하며 매일의 운세를 알려주는 역할을 합니다. 오늘의 ${zodiacSign} 운세를 알려주세요.`,
-                },
-              ],
-            },
-            generationConfig: {
-              maxOutputTokens: 100,
-            },
-          }),
-        }
-      );
-      const horoscopeData = await horoscopeResponse.json();
-      horoscopeElement.textContent =
-        horoscopeData.candidates?.[0]?.content.parts[0]?.text ||
-        "운세를 가져올 수 없습니다.";
-
-        
-
-      // Fetch Weather
-      getLocation(); // Fetch the weather based on location
-      //
-      // Weather Functions
-
-
+  // Weather Functions
   function getLocation() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(getWeather, showError);
@@ -182,7 +181,7 @@ function showError(error) {
       .then((data) => {
         const location = data.name;
         const celsiusTemperature = Number(data.main.temp) - 273.15; // Convert to Celsius
-        const fahrenheitTemperature = (celsiusTemperature * 1.8) + 32; // Convert to Fahrenheit
+        const fahrenheitTemperature = celsiusTemperature * 1.8 + 32; // Convert to Fahrenheit
         const formattedTemperature = fahrenheitTemperature.toFixed(2);
         const weatherDescription = data.weather[0].description;
         const icon = data.weather[0].icon;
@@ -199,37 +198,85 @@ function showError(error) {
         weatherElement.innerHTML = "Unable to fetch weather data.";
       });
   }
-      
-      // Fetch Quote
-      const quoteResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: {
-              role: "user",
-              parts: [
-                {
-                  text: `당신은 격려의 조언과 명언을 제대로 전달합니다. 무조건 명언과 출처만 전달합니다. 예를 들어 "실패는 성공의 어머니이다." - 에디슨. 이렇게 작성해 줘. 오늘의 ${zodiacSign}에게 필요한 명언을 알려주세요.`,
-                },
-              ],
-            },
-            generationConfig: {
-              maxOutputTokens: 100,
-            },
-          }),
-        }
-      );
-      const quoteData = await quoteResponse.json();
-      quoteElement.textContent =
-      quoteData.candidates?.[0]?.content.parts[0]?.text ||
-        "날씨를 가져올 수 없습니다.";
+          const chatMessages = document.getElementById("chatMessages");
+          const userInput = document.getElementById("userInput");
+          const submitBtn = document.getElementById("submitBtn");
+  
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+  
+          function addMessage(content, type) {
+              const messageDiv = document.createElement("div");
+              messageDiv.classList.add("message", `${type}-message`);
+              messageDiv.textContent = content;
+              chatMessages.appendChild(messageDiv);
+              chatMessages.scrollTop = chatMessages.scrollHeight;
+          }
+  
+          function showLoading() {
+              const loadingDiv = document.createElement("div");
+              loadingDiv.classList.add("message", "loading");
+              loadingDiv.textContent = "AI가 응답 중입니다...";
+              chatMessages.appendChild(loadingDiv);
+              chatMessages.scrollTop = chatMessages.scrollHeight;
+              return loadingDiv;
+          }
+  
+          function removeLoading(loadingDiv) {
+              if (loadingDiv) {
+                  chatMessages.removeChild(loadingDiv);
+              }
+          }
+  
+          submitBtn.addEventListener("click", async () => {
+              const userMessage = userInput.value.trim();
+              
+              if (!userMessage) {
+                  alert("질문을 입력해주세요.");
+                  return;
+              }
+  
+              addMessage(userMessage, "user");
+              userInput.value = "";
+              const loadingDiv = showLoading();
+  
+              try {
+                  const response = await fetch(apiUrl, {
+                      method: "POST",
+                      headers: {
+                          "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                          contents: {
+                              role: "user",
+                              parts: [{ text: userMessage }]
+                          },
+                          generationConfig: {
+                              maxOutputTokens: 300
+                          }
+                      }),
+                  });
+  
+                  const data = await response.json();
+                  removeLoading(loadingDiv);
+  
+                  if (data && data.candidates && data.candidates[0].content.parts[0].text) {
+                      const aiResponse = data.candidates[0].content.parts[0].text;
+                      addMessage(aiResponse, "ai");
+                  } else {
+                      addMessage("죄송합니다. 응답을 받을 수 없습니다.", "ai");
+                  }
+              } catch (error) {
+                  removeLoading(loadingDiv);
+                  console.error("에러 발생:", error);
+                  addMessage("죄송합니다. 오류가 발생했습니다.", "ai");
+              }
+          });
+  
+          // Enter 키로도 메시지 전송 가능
+          userInput.addEventListener("keypress", (e) => {
+              if (e.key === "Enter") {
+                  submitBtn.click();
+              }
+          });
 
-    } catch (error) {
-      console.error("Error fetching results:", error);
-    }
-  }
 });
