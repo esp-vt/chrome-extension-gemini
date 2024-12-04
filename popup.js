@@ -15,6 +15,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const weatherElement = document.getElementById("weather");
   const quoteElement = document.getElementById("quote");
 
+// 위치 정보 가져오기 실패 처리
+function showError(error) {
+  switch (error.code) {
+      case error.PERMISSION_DENIED:
+          document.getElementById("weather").innerHTML = "User denied the request for Geolocation.";
+          break;
+      case error.POSITION_UNAVAILABLE:
+          document.getElementById("weather").innerHTML = "Location information is unavailable.";
+          break;
+      case error.TIMEOUT:
+          document.getElementById("weather").innerHTML = "The request to get user location timed out.";
+          break;
+      case error.UNKNOWN_ERROR:
+          document.getElementById("weather").innerHTML = "An unknown error occurred.";
+          break;
+  }
+}
+
   // Zodiac Sign Calculation
   function getZodiacSign(month, day) {
     const zodiacSigns = [
@@ -108,7 +126,6 @@ document.addEventListener("DOMContentLoaded", () => {
     horoscopeElement.textContent = "운세를 가져오는 중...";
     weatherElement.textContent = "날씨를 가져오는 중...";
     quoteElement.textContent = "명언을 가져오는 중...";
-
     try {
       // Fetch Horoscope
       const horoscopeResponse = await fetch(
@@ -139,20 +156,75 @@ document.addEventListener("DOMContentLoaded", () => {
         "운세를 가져올 수 없습니다.";
 
       // Fetch Weather
-      const weatherResponse = await fetch(
-        `http://api.weatherstack.com/current
-    ? access_key = c702a74ed0e667280ae27dba84a81b19
-    & query = New York`
-      );
-      const weatherData = await weatherResponse.json();
-      weatherElement.textContent = `현재 날씨: ${weatherData.current.temp_c}°C, ${weatherData.current.condition.text}`;
+      getLocation(); // Fetch the weather based on location
+      //
+      // Weather Functions
+  const API_KEY = 'a8103c3ccfec81daceab535bd4b3c839'; // OpenWeatherMap API Key
 
+  function getLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(getWeather, showError);
+    } else {
+      weatherElement.innerHTML = "Geolocation is not supported by this browser.";
+    }
+  }
+
+  function getWeather(position) {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
+
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        const location = data.name;
+        const celsiusTemperature = Number(data.main.temp) - 273.15; // Convert to Celsius
+        const fahrenheitTemperature = (celsiusTemperature * 1.8) + 32; // Convert to Fahrenheit
+        const formattedTemperature = fahrenheitTemperature.toFixed(2);
+        const weatherDescription = data.weather[0].description;
+        const icon = data.weather[0].icon;
+
+        weatherElement.innerHTML = `
+          <h2>${location}</h2>
+          <p><img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${weatherDescription}"></p>
+          <p>Temperature: ${formattedTemperature}°F</p>
+          <p>Condition: ${weatherDescription}</p>
+        `;
+      })
+      .catch((error) => {
+        console.error("Error fetching weather data:", error);
+        weatherElement.innerHTML = "Unable to fetch weather data.";
+      });
+  }
+      
       // Fetch Quote
       const quoteResponse = await fetch(
-        "https://zenquotes.io/api/random/option1=value&option2=value"
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: {
+              role: "user",
+              parts: [
+                {
+                  text: `당신은 격려의 조언과 명언을 제대로 전달합니다. 무조건 명언과 출처만 전달합니다. 예를 들어 "실패는 성공의 어머니이다." - 에디슨. 이렇게 작성해 줘. 오늘의 ${zodiacSign}에게 필요한 명언을 알려주세요.`,
+                },
+              ],
+            },
+            generationConfig: {
+              maxOutputTokens: 100,
+            },
+          }),
+        }
       );
       const quoteData = await quoteResponse.json();
-      quoteElement.textContent = `명언: "${quoteData.content}" - ${quoteData.author}`;
+      quoteElement.textContent =
+      quoteData.candidates?.[0]?.content.parts[0]?.text ||
+        "날씨를 가져올 수 없습니다.";
+
     } catch (error) {
       console.error("Error fetching results:", error);
     }
