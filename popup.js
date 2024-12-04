@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const weatherElement = document.getElementById("weather");
   const quoteElement = document.getElementById("quote");
 
+  const API_KEY = 'a8103c3ccfec81daceab535bd4b3c839'; // OpenWeatherMap API Key
 // 위치 정보 가져오기 실패 처리
 function showError(error) {
   switch (error.code) {
@@ -155,11 +156,13 @@ function showError(error) {
         horoscopeData.candidates?.[0]?.content.parts[0]?.text ||
         "운세를 가져올 수 없습니다.";
 
+        
+
       // Fetch Weather
       getLocation(); // Fetch the weather based on location
       //
       // Weather Functions
-  const API_KEY = 'a8103c3ccfec81daceab535bd4b3c839'; // OpenWeatherMap API Key
+
 
   function getLocation() {
     if (navigator.geolocation) {

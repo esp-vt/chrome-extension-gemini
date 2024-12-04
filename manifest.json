@@ -3,7 +3,14 @@
   "name": "Gemini API Chrome Extension",
   "version": "1.0",
   "description": "A Chrome extension to interact with Gemini API",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://api.openweathermap.org/*"
+  ],
   "action": {
     "default_popup": "popup.html"
   }
